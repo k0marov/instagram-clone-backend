@@ -1,3 +1,4 @@
+from os import kill
 import setup_django
 setup_django.setup_tests()
 
@@ -33,7 +34,9 @@ class TestPostsViewSet(ViewTestBase):
 
     def test_list(self): 
         expected_posts = [self.post3, self.post2, self.post1] # the most recent first
-        expected_response = PostSerializer(expected_posts, many=True).data
+        expected_response = {
+            'posts': PostSerializer(expected_posts, many=True).data
+        }
         url = reverse("posts-list", kwargs={
             'profile_pk': self.user.pk
         })
@@ -55,8 +58,13 @@ class TestPostsViewSet(ViewTestBase):
         url = reverse("posts-list", kwargs={
             'profile_pk': new_user.pk
         })
-        self.request_test(url, self.client.post, data, {}, 200) 
 
+        response = self.request_test(url, self.client.post, data, None, 200) 
+        # verify response 
+        self.assertEqual(
+            PostSerializer(Post.objects.get(pk=response['pk'])).data, 
+            response
+        )
         # verify post was created 
         new_user_posts = Post.objects.filter(author=new_user) 
         self.assertEqual(
@@ -91,8 +99,12 @@ class TestPostsViewSet(ViewTestBase):
             'profile_pk': self.user.pk, 
             'pk': test_post_pk, 
         })
-        expected_response = {} 
-        self.request_test(url, self.client.put, data, expected_response, 200)
+        response  = self.request_test(url, self.client.put, data, None, 200)
+        # verify response 
+        self.assertEqual(
+            PostSerializer(Post.objects.get(pk=test_post_pk)).data, 
+            response,
+        )
         # verify post was updated 
         self.assertEqual(
             Post.objects.get(pk=test_post_pk).text,
@@ -108,8 +120,7 @@ class TestPostsViewSet(ViewTestBase):
             'profile_pk': user.pk, 
             'pk': test_post_pk, 
         })
-        expected_response = {} 
-        self.request_test(url, self.client.put, data, expected_response, 403)
+        self.request_test(url, self.client.put, data, None, 403)
         # verify post was NOT updated 
         self.assertEqual(
             Post.objects.get(pk=test_post_pk).text, 

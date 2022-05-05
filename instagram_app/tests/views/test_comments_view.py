@@ -34,7 +34,9 @@ class TestCommentsViewSet(ViewTestBase):
             'post_pk': self.post.pk, 
         })
         comments = [self.comment2, self.comment1] # most recent first
-        expected_response = CommentSerializer(comments, many=True).data 
+        expected_response = {
+            "comments": CommentSerializer(comments, many=True).data 
+        }
         self.request_test(url, self.client.get, {}, expected_response, 200)
     def test_list_404(self): 
         url = reverse("comments-list", kwargs={
@@ -114,7 +116,12 @@ class TestCommentsViewSet(ViewTestBase):
             'profile_pk': self.user.pk, 
             'post_pk': new_post.pk, 
         })
-        self.request_test(url, self.client.post, data, {}, 200)
+        response = self.request_test(url, self.client.post, data, None, 200)
+        # verify response 
+        self.assertEqual(
+            CommentSerializer(Comment.objects.get(pk=response['pk'])).data, 
+            response
+        )
         # verify comment was created 
         self.assertEqual(
             new_post.comments.count(),

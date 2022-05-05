@@ -17,17 +17,21 @@ class CommentsViewSet(ViewSet):
     def list(self, request, profile_pk=None, post_pk=None): 
         post = get_object_or_404(Post, pk=post_pk) 
         comments = post.comments
-        serializer = CommentSerializer(comments, many=True) 
-        return Response(serializer.data, 200)
+        response = {
+            "comments": CommentSerializer(comments, many=True).data
+        }
+        return Response(response, 200)
     def create(self, request, profile_pk=None, post_pk=None): 
         post = get_object_or_404(Post, pk=post_pk) 
         text = request.data['text']
-        Comment.objects.create(
+        new_comment = Comment.objects.create(
             author=request.user, 
             post=post, 
             text=text
         )
-        return Response(status=200)
+        response = CommentSerializer(new_comment).data
+        
+        return Response(response, status=200)
 
     @action(detail=True, methods=["POST"], url_name="like")
     def like(self, request, profile_pk=None, post_pk=None, pk=None): 

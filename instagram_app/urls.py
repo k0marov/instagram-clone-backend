@@ -9,8 +9,9 @@ import instagram_app.views as views
 profile_router = routers.DefaultRouter() 
 profile_router.register(r'profiles', views.ProfilesViewSet, basename="profiles") 
 # generates 
-# /profiles/ 
 # /profiles/{pk}/ 
+# /profiles-me/
+# /profiles-avatar-update/
 
 posts_router = nested_routers.NestedSimpleRouter(
     profile_router, 
@@ -21,6 +22,7 @@ posts_router.register(r'posts', views.PostsViewSet, basename='posts')
 # generates 
 # /profiles/{profile_pk}/posts/ 
 # /profiles/{profile_pk}/posts/{post_pk}/ 
+# /profiles/{profile_pk}/posts-like/{post_pk}/
 
 comments_router = nested_routers.NestedSimpleRouter(
     posts_router, 
@@ -31,6 +33,7 @@ comments_router.register(r'comments', views.CommentsViewSet, basename='comments'
 # generates 
 # /profiles/{profile_pk}/posts/{post_pk}/comments/
 # /profiles/{profile_pk}/posts/{post_pk}/comments/{pk}/
+# /profiles/{profile_pk}/posts/{post_pk}/comments-like/{pk}/
 
 
 

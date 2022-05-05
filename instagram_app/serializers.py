@@ -21,7 +21,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     follows = serializers.IntegerField(source="follows.count")
     class Meta: 
         model = Profile 
-        fields = ['about', 'username', 'avatar', 'followers', 'follows']
+        fields = ['pk', 'about', 'username', 'avatar', 'followers', 'follows']
         depth = 1
 
 class LikedListSerializer(serializers.BaseSerializer): 
@@ -34,7 +34,7 @@ class CommentSerializer(serializers.ModelSerializer):
     liked_by = LikedListSerializer(instance="liked_by")
     class Meta: 
         model = Comment 
-        fields = ["author", "post", "liked_by", "created_at", "text"]
+        fields = ['pk', "author", "post", "liked_by", "created_at", "text"]
 
 class PostSerializer(serializers.ModelSerializer): 
     author = serializers.CharField(source='author.username')
@@ -43,5 +43,5 @@ class PostSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(instance="comments", many=True)
     class Meta: 
         model = Post 
-        fields = ['author', 'liked_by', 'comments', 'created_at', 'text'] 
+        fields = ['pk', 'author', 'liked_by', 'comments', 'created_at', 'text'] 
         depth = 1

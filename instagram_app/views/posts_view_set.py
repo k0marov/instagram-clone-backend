@@ -20,16 +20,20 @@ class PostsViewSet(ViewSet):
         author = get_object_or_404(get_user_model(), pk=profile_pk)
         posts = Post.objects.filter(author=author) 
         serializer = PostSerializer(posts, many=True) 
-        return Response(serializer.data, status=200)
+        response = {
+            'posts': serializer.data
+        }
+        return Response(response, status=200)
 
     def create(self, request: HttpRequest, profile_pk=None): 
         """Create a new post (author is the logged in user)"""
         text = request.data["text"]
-        Post.objects.create(
+        new_post = Post.objects.create(
             author=request.user,
             text=text, 
         )
-        return Response(status=200)
+        response = PostSerializer(new_post).data
+        return Response(response, status=200)
 
     def update(self, request, profile_pk=None, pk=None): 
         """Edit an existing post (author must be the logged in user)"""
@@ -39,7 +43,8 @@ class PostsViewSet(ViewSet):
             return Response(status=403)
         post.text = text 
         post.save() 
-        return Response(status=200)
+        response = PostSerializer(post).data
+        return Response(response, status=200)
 
     def destroy(self, request, profile_pk=None, pk=None): 
         """Delete an existing post (author must be the logged in user)"""

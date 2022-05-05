@@ -89,6 +89,11 @@ class TestProfileSerializer(TestCase):
         
         self.serializer = ProfileSerializer(instance=self.profile) 
         self.serialized_data = self.serializer.data
+    def test_pk(self): 
+        self.assertEqual(
+            self.serialized_data['pk'], 
+            self.profile.pk, 
+        )
     def test_username(self): 
         self.assertEqual(
             self.serialized_data['username'], self.user.username, 
@@ -111,6 +116,10 @@ class TestProfileSerializer(TestCase):
             self.serialized_data['follows'],
             2
         )
+    def test_avatar_url(self): 
+        self.assertTrue(
+            self.serialized_data['avatar'].startswith("/media/avatars/user_" + str(self.user.pk)), 
+        )
 
 class TestPostSerializer(TestCase): 
     def setUp(self): 
@@ -119,7 +128,11 @@ class TestPostSerializer(TestCase):
         create_test_comment(post=self.post)
         self.serializer = PostSerializer(instance=self.post)
         self.serialized_data = self.serializer.data
-
+    def test_pk(self): 
+        self.assertEqual(
+            self.serialized_data['pk'], 
+            self.post.pk
+        )
     def test_liked_by(self): 
         self.assertEqual(
             type(self.serializer.fields.get("liked_by")), 
@@ -152,6 +165,11 @@ class TestCommentSerializer(TestCase):
         self.comment.liked_by.add_like_from(create_test_user()) 
         self.serializer = CommentSerializer(instance=self.comment)
         self.serialized_data = self.serializer.data
+    def test_pk(self): 
+        self.assertEqual(
+            self.serialized_data['pk'], 
+            self.comment.pk,
+        )
     def test_author(self): 
         self.assertEqual(
             self.serialized_data['author'], 

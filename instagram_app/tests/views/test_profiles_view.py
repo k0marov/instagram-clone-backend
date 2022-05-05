@@ -46,7 +46,7 @@ class TestProfilesViewSet(ViewTestBase):
         }) 
 
         expected_response = {
-            'users': [user.pk for user in test_user.follows.all()]
+            'profiles': ProfileSerializer(test_user.follows.all(), many=True).data
         }
         self.request_test(url, self.client.get, {}, expected_response, 200)
     def test_toggle_follow_for_following(self): 
@@ -91,7 +91,9 @@ class TestProfilesViewSet(ViewTestBase):
         data = {
             "about": "Updated about"
         }
-        self.request_test(url, self.client.put, data, {}, 200)
+        expected_response = ProfileSerializer(Profile.objects.get(pk=user.profile.pk)).data
+        expected_response['about'] = data['about']
+        self.request_test(url, self.client.put, data, expected_response, 200)
         # validate that profile has been updated
         self.assertEqual(
             Profile.objects.get(pk=user.profile.pk).about,
@@ -134,12 +136,20 @@ class TestProfilesViewSet(ViewTestBase):
         data = {
             'file': SimpleUploadedFile("test_avatar.png", avatar_file, content_type="image/png")
         }  
-        self.request_test(url, lambda **kwargs: self.client.post(format="multipart", **kwargs), data, {}, 200) 
+        response = self.request_test(url, lambda **kwargs: self.client.post(format="multipart", **kwargs), data, None, 200) 
+        # verify response
+        self.assertNotEqual(response.get('avatar'), None); 
+        profile = ProfileSerializer(Profile.objects.get(pk=user.profile.pk)).data 
+        self.assertEqual(
+            {key: value for key, value in response.items() if key != "avatar"}, 
+            {key: value for key, value in profile.items() if key != "avatar"}
+        )
         #verify avatar was updated 
         self.assertNotEqual(
             Profile.objects.get(pk=user.profile.pk).avatar, 
             None
         )
+
     def test_avatar_update_403(self): 
         url = reverse("profiles-avatar") 
         data = {

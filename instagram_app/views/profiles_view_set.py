@@ -34,7 +34,7 @@ class ProfilesViewSet(ViewSet):
     def retrieve_follows(self, request, pk=None): 
         target_user = get_object_or_404(Profile, pk=pk)
         follows = {
-            'users': [profile.pk for profile in target_user.follows.all()]
+            'profiles': ProfileSerializer(target_user.follows.all(), many=True).data,
         }
         return Response(follows, status=200)
     
@@ -55,14 +55,14 @@ class ProfilesViewSet(ViewSet):
         about = request.data['about'] 
         profile.about = about 
         profile.save() 
-        return Response(status=200)
+        updated_profile = ProfileSerializer(profile).data 
+        return Response(updated_profile, status=200)
     
 
     @action(detail=False, methods=["POST"], url_name="avatar")
     def avatar_update(self, request): 
         profile = get_object_or_404(Profile, pk=request.user.pk) 
         image_file = request.data['file'] 
-        print('image_file:', type(image_file)) 
         if not issubclass(type(image_file), UploadedFile):
             return Response(status=400)
 
@@ -76,4 +76,6 @@ class ProfilesViewSet(ViewSet):
             }, status=400)
         
         profile.update_avatar(image_file)
-        return Response(status=200)
+        response = ProfileSerializer(profile).data
+        print(response)
+        return Response(response, status=200)
