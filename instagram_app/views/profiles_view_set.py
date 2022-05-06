@@ -43,10 +43,9 @@ class ProfilesViewSet(ViewSet):
             profile.save() 
         if request.data.get('avatar'): 
             image_file = request.data['avatar'] 
-            print(image_file) 
-            print(type(image_file));
-            if not issubclass(type(image_file), UploadedFile):
-                return Response(status=400)
+            # print(type(image_file))
+            # if not issubclass(type(image_file), UploadedFile):
+            #     return Response(status=400)
             # check that provided file is truly a valid image (not some .js file or something like that)
             try: 
                 im = Image.open(image_file)
