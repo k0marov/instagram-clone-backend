@@ -31,7 +31,7 @@ class ProfilesViewSet(ViewSet):
         elif request.method == "PUT": 
             return self._update_me(request)
 
-    def _retrive_me(self, request): 
+    def _retrieve_me(self, request): 
         profile = request.user.profile 
         data = ProfileSerializer(profile).data 
         data['followsProfiles'] = ProfileSerializer(profile.follows, many=True).data
