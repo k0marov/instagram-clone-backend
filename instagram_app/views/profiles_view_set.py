@@ -44,8 +44,8 @@ class ProfilesViewSet(ViewSet):
         if request.data.get('avatar'): 
             image_file = request.data['avatar'] 
             print('image_file: ', type(image_file))
-            # if not issubclass(type(image_file), UploadedFile):
-            #     return Response(status=400)
+            if not issubclass(type(image_file), UploadedFile):
+                return Response({'detail': 'What you uploaded is not a file'}, status=400)
             # check that provided file is truly a valid image (not some .js file or something like that)
             try: 
                 im = Image.open(image_file)
