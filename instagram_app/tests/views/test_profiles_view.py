@@ -94,8 +94,9 @@ class TestProfilesViewSet(ViewTestBase):
         data = {
             "about": "Updated about"
         }
-        expected_response = ProfileSerializer(Profile.objects.get(pk=user.profile.pk)).data
+        expected_response = ProfileSerializer(user.profile).data
         expected_response['about'] = data['about']
+        expected_response['followsProfiles'] = ProfileSerializer(user.profile.follows, many=True).data
         self.request_test(url, self.client.put, data, expected_response, 200)
         # validate that profile has been updated
         self.assertEqual(
@@ -115,9 +116,11 @@ class TestProfilesViewSet(ViewTestBase):
         response = self.request_test(url, lambda **kwargs: self.client.put(format="multipart", **kwargs), data, None, 200) 
         updated_profile = Profile.objects.get(pk=user.profile.pk)
         # verify response
+        expected_response = ProfileSerializer(updated_profile).data 
+        expected_response['followsProfiles'] = ProfileSerializer(updated_profile.follows, many=True).data
         self.assertEqual(
             response, 
-            ProfileSerializer(updated_profile).data, 
+            expected_response
         )
         #verify avatar was updated 
         self.assertNotEqual(

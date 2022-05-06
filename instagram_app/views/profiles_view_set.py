@@ -27,7 +27,7 @@ class ProfilesViewSet(ViewSet):
     @action(detail=False, methods=["GET", "PUT"], url_name="me") 
     def me(self, request): 
         if request.method == "GET": 
-            return self._retrive_me(request)
+            return self._retrieve_me(request)
         elif request.method == "PUT": 
             return self._update_me(request)
 
@@ -55,7 +55,7 @@ class ProfilesViewSet(ViewSet):
                 }, status=400)
             
             profile.update_avatar(image_file)
-        return self._retrieve_me(self)
+        return self._retrieve_me(request)
     
     @action(detail=True, methods=["GET"], url_name="follows")
     def retrieve_follows(self, request, pk=None): 
