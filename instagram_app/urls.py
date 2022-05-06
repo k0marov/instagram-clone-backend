@@ -11,7 +11,7 @@ profile_router.register(r'profiles', views.ProfilesViewSet, basename="profiles")
 # generates 
 # /profiles/{pk}/ 
 # /profiles-me/
-# /profiles-avatar-update/
+# /profiles-avatar/
 
 posts_router = nested_routers.NestedSimpleRouter(
     profile_router, 

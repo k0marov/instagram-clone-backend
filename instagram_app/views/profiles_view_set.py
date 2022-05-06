@@ -24,11 +24,38 @@ class ProfilesViewSet(ViewSet):
         serializer = ProfileSerializer(profile)
         return Response(serializer.data, status=200)
 
-    @action(detail=False, methods=["GET"], url_name="me") 
-    def retrieve_me(self, request): 
+    @action(detail=False, methods=["GET", "PUT"], url_name="me") 
+    def me(self, request): 
+        if request.method == "GET": 
+            return self._retrive_me(request)
+        elif request.method == "PUT": 
+            return self._update_me(request)
+
+    def _retrive_me(self, request): 
         profile = request.user.profile 
-        serializer = ProfileSerializer(profile) 
-        return Response(serializer.data, status=200)
+        data = ProfileSerializer(profile).data 
+        data['followsProfiles'] = ProfileSerializer(profile.follows, many=True).data
+        return Response(data, status=200)
+    def _update_me(self, request): 
+        profile = request.user.profile
+        if request.data.get('about'): 
+            profile.about = request.data['about']
+            profile.save() 
+        if request.data.get('avatar'): 
+            image_file = request.data['avatar'] 
+            if not issubclass(type(image_file), UploadedFile):
+                return Response(status=400)
+            # check that provided file is truly a valid image (not some .js file or something like that)
+            try: 
+                im = Image.open(image_file)
+                im.verify() 
+            except: 
+                return Response({
+                    'detail': 'What you uploaded is not a valid image.'
+                }, status=400)
+            
+            profile.update_avatar(image_file)
+        return self._retrieve_me(self)
     
     @action(detail=True, methods=["GET"], url_name="follows")
     def retrieve_follows(self, request, pk=None): 
@@ -47,35 +74,3 @@ class ProfilesViewSet(ViewSet):
         else: 
             target_user.followers.add(acting_user)
         return Response({}, status=200)
-
-    def update(self, request, pk=None): 
-        profile = get_object_or_404(Profile, pk=pk) 
-        if profile.user != request.user: 
-            return Response(status=403)
-        about = request.data['about'] 
-        profile.about = about 
-        profile.save() 
-        updated_profile = ProfileSerializer(profile).data 
-        return Response(updated_profile, status=200)
-    
-
-    @action(detail=False, methods=["POST"], url_name="avatar")
-    def avatar_update(self, request): 
-        profile = get_object_or_404(Profile, pk=request.user.pk) 
-        image_file = request.data['file'] 
-        if not issubclass(type(image_file), UploadedFile):
-            return Response(status=400)
-
-        # check that provided file is truly a valid image (not some .js file or something like that)
-        try: 
-            im = Image.open(image_file)
-            im.verify() 
-        except: 
-            return Response({
-                'detail': 'What you uploaded is not a valid image.'
-            }, status=400)
-        
-        profile.update_avatar(image_file)
-        response = ProfileSerializer(profile).data
-        print(response)
-        return Response(response, status=200)
