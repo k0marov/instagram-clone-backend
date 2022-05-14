@@ -73,7 +73,7 @@ class AbstractLikesList(models.Model):
     def get_liked_object_author(self):
         pass
 
-    def add_like_from(self, user):
+    def add_like_from(self, user: Profile):
         """Returns False and doesn't add the like if the given user is the author"""
         if user != self.get_liked_object_author():
             self.users_who_liked.add(user)

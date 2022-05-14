@@ -29,20 +29,20 @@ class TestCommentsViewSet(ViewTestBase):
             text="test comment 2"
         )
     def test_list(self): 
-        url = reverse("comments-list", kwargs={
-            'profile_pk': self.user.pk, 
-            'post_pk': self.post.pk, 
-        })
+        url = reverse("comments-list") + f"?post_id={self.post.pk}"
         comments = [self.comment2, self.comment1] # most recent first
         expected_response = {
             "comments": CommentSerializer(comments, many=True).data 
         }
         self.request_test(url, self.client.get, {}, expected_response, 200)
+    def test_list_without_post_id(self): 
+        url = reverse("comments-list") 
+        expected_response = {
+            'detail': "You need to provide the post_id query parameter."
+        }
+        self.request_test(url, self.client.get, {}, expected_response, 400)
     def test_list_404(self): 
-        url = reverse("comments-list", kwargs={
-            'profile_pk': self.user.pk, 
-            'post_pk': 424242
-        })
+        url = reverse("comments-list") + f"?post_id={4242}"
         expected_response = {
             "detail": "Not found."
         }
@@ -51,8 +51,6 @@ class TestCommentsViewSet(ViewTestBase):
         user = self.sign_in_random_user()
         test_comment_pk = self.comment1.pk
         url = reverse("comments-like", kwargs={
-            'profile_pk': self.user.pk, 
-            'post_pk': self.post.pk, 
             'pk': test_comment_pk 
         })
         self.request_test(url, self.client.post, {}, {}, 200)
@@ -64,8 +62,6 @@ class TestCommentsViewSet(ViewTestBase):
     def test_like_404(self): 
         self.sign_in_random_user()
         url = reverse("comments-like", kwargs={
-            'profile_pk': self.user.pk, 
-            'post_pk': self.post.pk, 
             'pk': 424242, 
         })
         expected_response = {
@@ -74,8 +70,6 @@ class TestCommentsViewSet(ViewTestBase):
         self.request_test(url, self.client.post, {}, expected_response, 404)
     def test_like_unauthorized(self): 
         url = reverse("comments-like", kwargs={
-            'profile_pk': self.user.pk, 
-            'post_pk': self.post.pk, 
             'pk': self.comment1.pk
         })
         expected_response = {
@@ -90,8 +84,6 @@ class TestCommentsViewSet(ViewTestBase):
             text="Some new comment"
         )
         url = reverse("comments-like", kwargs={
-            'profile_pk': self.user.pk, 
-            'post_pk': self.post.pk, 
             'pk': comment.pk
         })
         expected_response = {
@@ -112,10 +104,7 @@ class TestCommentsViewSet(ViewTestBase):
             author=self.user, 
             text="Some test post"
         )
-        url = reverse("comments-list", kwargs={
-            'profile_pk': self.user.pk, 
-            'post_pk': new_post.pk, 
-        })
+        url = reverse("comments-list") + f"?post_id={new_post.pk}"
         response = self.request_test(url, self.client.post, data, None, 200)
         # verify response 
         self.assertEqual(
@@ -131,15 +120,19 @@ class TestCommentsViewSet(ViewTestBase):
             Post.objects.get(pk=new_post.pk).comments.first().text, 
             data['text']
         )
+    def test_create_without_post_parameter(self): 
+        self.sign_in_random_user()
+        url = reverse("comments-list") 
+        expected_response = {
+            'detail': "You need to provide the post_id query parameter."
+        }
+        self.request_test(url, self.client.post, {}, expected_response, 400)
     def test_create_404_non_existing_post(self): 
         self.sign_in_random_user()
         data = {
             'text': 'some new comment'
         }
-        url = reverse("comments-list", kwargs={
-            'profile_pk': self.user.pk, 
-            'post_pk': 424242
-        })
+        url = reverse("comments-list") + f"?post_id={4242}"
         expected_response = {
             'detail': 'Not found.'
         }
@@ -148,10 +141,7 @@ class TestCommentsViewSet(ViewTestBase):
         data = {
             'text': 'some new comment'
         }
-        url = reverse("comments-list", kwargs={
-            'profile_pk': self.user.pk, 
-            'post_pk': self.post.pk,
-        })
+        url = reverse("comments-list") + f"?post_id={self.post.pk}"
         expected_response = {
             "detail": "Authentication credentials were not provided."
         }

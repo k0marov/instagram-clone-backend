@@ -58,6 +58,7 @@ class AbstractTestLikesList:
         liked_by = self.get_likes_list()
         liked_by.add_like_from(create_test_user()) 
         self.assertEqual(liked_by.users_who_liked.count(), 1)
+
     def test_liked_by_add_selflike(self): 
         '''liking your own post should not count'''
         liked_by = self.get_likes_list() 

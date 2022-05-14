@@ -1,4 +1,3 @@
-from os import kill
 import setup_django
 setup_django.setup_tests()
 
@@ -31,20 +30,22 @@ class TestPostsViewSet(ViewTestBase):
         self.post1 = create_test_post_from_user(self.user) 
         self.post2 = create_test_post_from_user(self.user) 
         self.post3 = create_test_post_from_user(self.user) 
-
+    
     def test_list(self): 
         expected_posts = [self.post3, self.post2, self.post1] # the most recent first
         expected_response = {
             'posts': PostSerializer(expected_posts, many=True).data
         }
-        url = reverse("posts-list", kwargs={
-            'profile_pk': self.user.pk
-        })
+        url = reverse("posts-list") + f'?profile_id={self.user.pk}' 
         self.request_test(url, self.client.get, {}, expected_response, 200)
+    def test_list_without_profile_id(self): 
+        url = reverse("posts-list") 
+        expected_response = {
+            'detail': "You must pass in profile_id as a query parameter.",
+        } 
+        self.request_test(url, self.client.get, {}, expected_response, 401) 
     def test_list_of_non_existing_user(self): 
-        url = reverse("posts-list", kwargs={
-            'profile_pk': 424242
-        })
+        url = reverse("posts-list") + f'?profile_id={4242}' 
         expected_response = {
             'detail': "Not found."
         }
@@ -55,9 +56,7 @@ class TestPostsViewSet(ViewTestBase):
         data = {
             'text': "New post of new_user"
         }
-        url = reverse("posts-list", kwargs={
-            'profile_pk': new_user.pk
-        })
+        url = reverse("posts-list")
 
         response = self.request_test(url, self.client.post, data, None, 200) 
         # verify response 
@@ -79,9 +78,7 @@ class TestPostsViewSet(ViewTestBase):
         data = {
             "text": "New post"
         }
-        url = reverse("posts-list", kwargs={
-            'profile_pk': 424242
-        })
+        url = reverse("posts-list")
         expected_response = {
             'detail': 'Authentication credentials were not provided.'
         } 
@@ -96,7 +93,6 @@ class TestPostsViewSet(ViewTestBase):
             "text": "Updated text", 
         }
         url = reverse("posts-detail", kwargs={
-            'profile_pk': self.user.pk, 
             'pk': test_post_pk, 
         })
         response  = self.request_test(url, self.client.put, data, None, 200)
@@ -117,7 +113,6 @@ class TestPostsViewSet(ViewTestBase):
             "text": "Updated text", 
         }
         url = reverse("posts-detail", kwargs={
-            'profile_pk': user.pk, 
             'pk': test_post_pk, 
         })
         self.request_test(url, self.client.put, data, None, 403)
@@ -133,7 +128,6 @@ class TestPostsViewSet(ViewTestBase):
             "text": "Updated text"
         }
         url = reverse("posts-detail", kwargs={
-            'profile_pk': user.pk,
             'pk': test_post_pk, 
         })
         expected_response = {
@@ -145,7 +139,6 @@ class TestPostsViewSet(ViewTestBase):
         self.client.login(username=self.user.username, password="12345") 
         test_post_pk = self.post1.pk 
         url = reverse("posts-detail", kwargs={
-            'profile_pk': self.user.pk, 
             'pk': test_post_pk 
         })
         self.request_test(url, self.client.delete, {}, {}, 200)
@@ -158,7 +151,6 @@ class TestPostsViewSet(ViewTestBase):
         user = self.sign_in_random_user() 
         test_post_pk = self.post1.pk 
         url = reverse("posts-detail", kwargs={
-            'profile_pk': user.pk, 
             'pk': test_post_pk
         })
         self.request_test(url, self.client.delete, {}, {}, 403)
@@ -171,7 +163,6 @@ class TestPostsViewSet(ViewTestBase):
         user = self.sign_in_random_user() 
         test_post_pk = 424242 
         url = reverse("posts-detail", kwargs={
-            'profile_pk': user.pk, 
             'pk': test_post_pk
         })
         expected_response = {
@@ -183,7 +174,6 @@ class TestPostsViewSet(ViewTestBase):
         user = self.sign_in_random_user() 
         test_post_pk = self.post1.pk 
         url = reverse("posts-like", kwargs={
-            'profile_pk': self.user.pk, 
             'pk': test_post_pk
         })
         self.request_test(url, self.client.post, {}, {}, 200)
@@ -195,7 +185,6 @@ class TestPostsViewSet(ViewTestBase):
     def test_like_yourself(self): 
         self.client.login(username=self.user.username, password="12345")
         url = reverse("posts-like", kwargs={
-            'profile_pk': self.user.pk, 
             'pk': self.post1.pk
         })
         expected_response = { 
@@ -208,10 +197,9 @@ class TestPostsViewSet(ViewTestBase):
             0
         )
     def test_like_on_non_existing_post(self): 
-        user = self.sign_in_random_user() 
+        self.sign_in_random_user() 
         test_post_pk = 424242 
         url = reverse("posts-like", kwargs={
-            'profile_pk': self.user.pk, 
             'pk': test_post_pk
         }) 
         expected_response = {
@@ -221,7 +209,6 @@ class TestPostsViewSet(ViewTestBase):
     def test_like_while_not_signed_in(self): 
         test_post_pk = self.post1 
         url = reverse("posts-like", kwargs={
-            'profile_pk': self.user.pk, 
             'pk': test_post_pk
         })
         expected_response = {

@@ -14,14 +14,26 @@ class CommentsViewSet(ViewSet):
             return [] 
         else: 
             return [permissions.IsAuthenticated()] 
-    def list(self, request, profile_pk=None, post_pk=None): 
+    def list(self, request): 
+        post_pk = request.query_params.get("post_id")
+        if post_pk is None: 
+            response = {
+                'detail': "You need to provide the post_id query parameter."
+            }
+            return Response(response, 400) 
         post = get_object_or_404(Post, pk=post_pk) 
         comments = post.comments
         response = {
             "comments": CommentSerializer(comments, many=True).data
         }
         return Response(response, 200)
-    def create(self, request, profile_pk=None, post_pk=None): 
+    def create(self, request): 
+        post_pk = request.query_params.get("post_id") 
+        if post_pk is None: 
+            response = {
+                'detail': "You need to provide the post_id query parameter."
+            }
+            return Response(response, 400) 
         post = get_object_or_404(Post, pk=post_pk) 
         text = request.data['text']
         new_comment = Comment.objects.create(
@@ -34,7 +46,7 @@ class CommentsViewSet(ViewSet):
         return Response(response, status=200)
 
     @action(detail=True, methods=["POST"], url_name="like")
-    def like(self, request, profile_pk=None, post_pk=None, pk=None): 
+    def like(self, request, pk=None): 
         comment = get_object_or_404(Comment, pk=pk)
         liked_successfuly = comment.liked_by.add_like_from(request.user) 
         if not liked_successfuly: 

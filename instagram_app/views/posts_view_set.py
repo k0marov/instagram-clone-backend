@@ -16,8 +16,11 @@ class PostsViewSet(ViewSet):
         else: 
             return [permissions.IsAuthenticated()] 
 
-    def list(self, request, profile_pk=None): 
-        author = get_object_or_404(get_user_model(), pk=profile_pk)
+    def list(self, request): 
+        profile_id = request.query_params.get('profile_id') 
+        if profile_id is None: 
+            return Response({'detail': 'You must pass in profile_id as a query parameter.'}, 401)
+        author = get_object_or_404(get_user_model(), pk=profile_id)
         posts = Post.objects.filter(author=author) 
         serializer = PostSerializer(posts, many=True) 
         response = {
@@ -35,21 +38,21 @@ class PostsViewSet(ViewSet):
         response = PostSerializer(new_post).data
         return Response(response, status=200)
 
-    def update(self, request, profile_pk=None, pk=None): 
+    def update(self, request, pk=None): 
         """Edit an existing post (author must be the logged in user)"""
         text = request.data["text"] 
         post = get_object_or_404(Post, pk=pk) 
-        if post.author != request.user or profile_pk != str(request.user.pk): 
+        if post.author != request.user:
             return Response(status=403)
         post.text = text 
         post.save() 
         response = PostSerializer(post).data
         return Response(response, status=200)
 
-    def destroy(self, request, profile_pk=None, pk=None): 
+    def destroy(self, request, pk=None): 
         """Delete an existing post (author must be the logged in user)"""
         post = get_object_or_404(Post, pk=pk)
-        if post.author != request.user or profile_pk != str(request.user.pk): 
+        if post.author != request.user:
             return Response(status=403)
         post.delete() 
         return Response(status=200)
