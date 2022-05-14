@@ -1,8 +1,9 @@
 """Test all serializers"""
-from instagram_app.tests.shared_helpers import create_test_profile, get_fixtures_path
 import setup_django
 setup_django.setup_tests()
 
+from instagram_app.tests.shared_helpers import create_test_profile, get_fixtures_path
+from instagram_app.tests.views.test_posts_view import create_test_post_from_user
 from abc import abstractmethod
 from pathlib import Path
 from django.test import TestCase
@@ -31,6 +32,12 @@ def create_test_comment(post):
         author=create_test_profile(), 
         post=post, 
         text="Test Comment", 
+    )
+def create_test_comment_from_profile(post, profile): 
+    return Comment.objects.create(
+        author=profile, 
+        post=post, 
+        text="Test Comment"
     )
 
 class TestUserSerializer(TestCase): 
@@ -121,6 +128,10 @@ class TestProfileSerializer(TestCase):
             self.serialized_data['avatar'].startswith("/media/avatars/user_" + str(self.user.pk)), 
         )
 
+
+
+
+
 class TestPostSerializer(TestCase): 
     def setUp(self): 
         self.post = create_test_post() 
@@ -157,6 +168,41 @@ class TestPostSerializer(TestCase):
             type(self.serializer.fields.get('comments').child), 
             CommentSerializer
         )
+    def test_is_mine(self): 
+        self.assertEqual(
+            self.serialized_data.get('is_mine'),
+            False
+        )
+
+        profile1 = create_test_profile() 
+        profile2 = create_test_profile() 
+        self.assertEqual(
+            PostSerializer(create_test_post_from_user(profile1.user), context={'user_profile': profile1}).data.get('is_mine'), 
+            True
+        )
+        self.assertEqual(
+            PostSerializer(create_test_post_from_user(profile2.user), context={'user_profile': profile1}).data.get('is_mine'), 
+            False
+        )
+    def test_is_liked(self): 
+        self.assertEqual(
+            self.serialized_data.get('is_liked'), 
+            False
+        )
+
+        profile1 = create_test_profile() 
+        post = create_test_post() 
+        post.liked_by.toggle_like_from(profile1) 
+        context = {'user_profile': profile1}
+        self.assertEqual(
+            PostSerializer(post, context=context).data.get('is_liked'), 
+            True
+        )
+        post.liked_by.toggle_like_from(profile1) 
+        self.assertEqual(
+            PostSerializer(post, context=context).data.get('is_liked'), 
+            False,
+        )
 
 class TestCommentSerializer(TestCase): 
     def setUp(self): 
@@ -190,6 +236,42 @@ class TestCommentSerializer(TestCase):
             type(self.serializer.fields.get('liked_by')), 
             LikedListSerializer
         )
+
+    def test_is_mine(self): 
+        self.assertEqual(
+            self.serialized_data.get('is_mine'), 
+            False
+        )
+
+        profile = create_test_profile() 
+        comment = create_test_comment_from_profile(self.post, profile) 
+        self.assertEqual(
+            CommentSerializer(comment, context={'user_profile': profile}).data.get('is_mine'), 
+            True
+        )
+        self.assertEqual(
+            CommentSerializer(comment, context={'user_profile': create_test_profile()}).data.get('is_mine'), 
+            False
+        )
+    def test_is_liked(self): 
+        self.assertEqual(
+            self.serialized_data.get('is_liked'), 
+            False,
+        )
+
+        profile = create_test_profile() 
+        comment = create_test_comment(self.post) 
+        comment.liked_by.toggle_like_from(profile) 
+        self.assertEqual(
+            CommentSerializer(comment, context={'user_profile': profile}).data.get('is_liked'), 
+            True
+        )
+        comment.liked_by.toggle_like_from(profile) 
+        self.assertEqual(
+            CommentSerializer(comment, context={'user_profile': profile}).data.get('is_liked'), 
+            False
+        )
+
 
 class TestLikedListSerializer(TestCase): 
     def setUp(self): 
