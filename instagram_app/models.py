@@ -61,7 +61,7 @@ class AbstractLikesList(models.Model):
     Should be subclassed defining author of that "something"
     (post, comment, etc) 
     """
-    users_who_liked = models.ManyToManyField(get_user_model())
+    users_who_liked = models.ManyToManyField(Profile)
 
     def count(self): 
         return self.users_who_liked.count()  
@@ -73,10 +73,13 @@ class AbstractLikesList(models.Model):
     def get_liked_object_author(self):
         pass
 
-    def add_like_from(self, user: Profile):
+    def toggle_like_from(self, profile: Profile):
         """Returns False and doesn't add the like if the given user is the author"""
-        if user != self.get_liked_object_author():
-            self.users_who_liked.add(user)
+        if profile != self.get_liked_object_author():
+            if self.users_who_liked.filter(pk=profile.pk).exists(): 
+                self.users_who_liked.remove(profile)
+            else: 
+                self.users_who_liked.add(profile)
             return True
         else: 
             return False
@@ -87,7 +90,7 @@ class Post(models.Model):
     Post Model
     defines a regular post
     """
-    author = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    author = models.ForeignKey(Profile, on_delete=models.CASCADE)
     text = models.CharField(max_length=2048)
     created_at = models.DateTimeField(auto_now_add=True)
     '''
@@ -123,7 +126,7 @@ class Comment(models.Model):
     defines a comment for some post
     """
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
-    author = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    author = models.ForeignKey(Profile, on_delete=models.CASCADE)
     text = models.CharField(max_length=512)
     created_at = models.DateTimeField(auto_now_add=True)
     '''

@@ -1,3 +1,4 @@
+from instagram_app.tests.shared_helpers import create_test_profile
 from setup_django import setup_tests 
 setup_tests()
 
@@ -15,17 +16,17 @@ class TestCommentsViewSet(ViewTestBase):
             username="test_user", password="12345"
         )
         self.post = Post.objects.create(
-            author=self.user, 
+            author=self.user.profile, 
             text="Test Post Text"
         )
         self.comment1 = Comment.objects.create(
             post=self.post, 
-            author=create_test_user(), 
+            author=create_test_profile(), 
             text="test comment 1"
         )
         self.comment2 = Comment.objects.create(
             post=self.post, 
-            author=create_test_user(), 
+            author=create_test_profile(), 
             text="test comment 2"
         )
     def test_list(self): 
@@ -47,21 +48,22 @@ class TestCommentsViewSet(ViewTestBase):
             "detail": "Not found."
         }
         self.request_test(url, self.client.get, {}, expected_response, 404)
+
     def test_like(self): 
         user = self.sign_in_random_user()
         test_comment_pk = self.comment1.pk
-        url = reverse("comments-like", kwargs={
+        url = reverse("comments-toggle-like", kwargs={
             'pk': test_comment_pk 
         })
         self.request_test(url, self.client.post, {}, {}, 200)
         # verify that the comment was liked 
         self.assertEqual(
             list(Comment.objects.get(pk=test_comment_pk).liked_by.users_who_liked.all()),
-            [user]
+            [user.profile]
         )
     def test_like_404(self): 
         self.sign_in_random_user()
-        url = reverse("comments-like", kwargs={
+        url = reverse("comments-toggle-like", kwargs={
             'pk': 424242, 
         })
         expected_response = {
@@ -69,7 +71,7 @@ class TestCommentsViewSet(ViewTestBase):
         }
         self.request_test(url, self.client.post, {}, expected_response, 404)
     def test_like_unauthorized(self): 
-        url = reverse("comments-like", kwargs={
+        url = reverse("comments-toggle-like", kwargs={
             'pk': self.comment1.pk
         })
         expected_response = {
@@ -80,10 +82,10 @@ class TestCommentsViewSet(ViewTestBase):
         self.client.login(username=self.user.username, password="12345")
         comment = Comment.objects.create(
             post=self.post, 
-            author=self.user, 
+            author=self.user.profile, 
             text="Some new comment"
         )
-        url = reverse("comments-like", kwargs={
+        url = reverse("comments-toggle-like", kwargs={
             'pk': comment.pk
         })
         expected_response = {
@@ -95,13 +97,14 @@ class TestCommentsViewSet(ViewTestBase):
             Comment.objects.get(pk=self.comment1.pk).liked_by.count(), 
             0
         )
+
     def test_create(self): 
         self.sign_in_random_user() 
         data = {
             'text': "New comment"
         }
         new_post = Post.objects.create(
-            author=self.user, 
+            author=self.user.profile, 
             text="Some test post"
         )
         url = reverse("comments-list") + f"?post_id={new_post.pk}"

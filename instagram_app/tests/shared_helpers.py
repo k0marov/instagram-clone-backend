@@ -7,5 +7,7 @@ def create_test_user():
     user.set_password(str(uuid.uuid4()))
     user.save()
     return user
+def create_test_profile(): 
+    return create_test_user().profile
 def get_fixtures_path(): 
     return "./instagram_app/tests/fixtures/"

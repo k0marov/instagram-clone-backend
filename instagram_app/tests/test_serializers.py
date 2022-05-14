@@ -1,5 +1,5 @@
 """Test all serializers"""
-from instagram_app.tests.shared_helpers import get_fixtures_path
+from instagram_app.tests.shared_helpers import create_test_profile, get_fixtures_path
 import setup_django
 setup_django.setup_tests()
 
@@ -23,12 +23,12 @@ from shared_helpers import create_test_user
 
 def create_test_post(): 
     return Post.objects.create(
-        author=create_test_user(), 
+        author=create_test_profile(), 
         text="Test Post",
     )
 def create_test_comment(post): 
     return Comment.objects.create(
-        author=create_test_user(), 
+        author=create_test_profile(), 
         post=post, 
         text="Test Comment", 
     )
@@ -124,7 +124,7 @@ class TestProfileSerializer(TestCase):
 class TestPostSerializer(TestCase): 
     def setUp(self): 
         self.post = create_test_post() 
-        self.post.liked_by.add_like_from(create_test_user())
+        self.post.liked_by.toggle_like_from(create_test_profile())
         create_test_comment(post=self.post)
         self.serializer = PostSerializer(instance=self.post)
         self.serialized_data = self.serializer.data
@@ -162,7 +162,7 @@ class TestCommentSerializer(TestCase):
     def setUp(self): 
         self.post = create_test_post() 
         self.comment = create_test_comment(post=self.post)
-        self.comment.liked_by.add_like_from(create_test_user()) 
+        self.comment.liked_by.toggle_like_from(create_test_profile()) 
         self.serializer = CommentSerializer(instance=self.comment)
         self.serialized_data = self.serializer.data
     def test_pk(self): 
@@ -204,8 +204,8 @@ class TestLikedListSerializer(TestCase):
     def test_equals_zero_initially(self): 
         self.__assert_serialized_equal(0)
     def test_increments(self): 
-        self.liked_list.add_like_from(create_test_user())
+        self.liked_list.toggle_like_from(create_test_profile())
         self.__assert_serialized_equal(1) 
-        self.liked_list.add_like_from(create_test_user()) 
+        self.liked_list.toggle_like_from(create_test_profile()) 
         self.__assert_serialized_equal(2)
         

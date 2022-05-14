@@ -1,3 +1,4 @@
+from instagram_app.tests.shared_helpers import create_test_profile
 import setup_django
 setup_django.setup_tests()
 
@@ -11,11 +12,11 @@ from views.view_test_base import ViewTestBase
 
 def create_test_post_from_user(user): 
     post = Post.objects.create(
-        author=user, 
+        author=user.profile, 
         text="Test"
     )
     Comment.objects.create(
-        author=create_test_user(), 
+        author=create_test_profile(), 
         post=post, 
         text="Test Comment for Test Post", 
     )
@@ -65,7 +66,7 @@ class TestPostsViewSet(ViewTestBase):
             response
         )
         # verify post was created 
-        new_user_posts = Post.objects.filter(author=new_user) 
+        new_user_posts = Post.objects.filter(author=new_user.profile) 
         self.assertEqual(
             new_user_posts.count(), 
             1
@@ -170,21 +171,21 @@ class TestPostsViewSet(ViewTestBase):
         }
         self.request_test(url, self.client.delete, {}, expected_response, 404)
     
-    def test_like(self): 
+    def test_toggle_like(self): 
         user = self.sign_in_random_user() 
         test_post_pk = self.post1.pk 
-        url = reverse("posts-like", kwargs={
+        url = reverse("posts-toggle-like", kwargs={
             'pk': test_post_pk
         })
         self.request_test(url, self.client.post, {}, {}, 200)
         # verify like was added 
         self.assertEqual(
             list(self.post1.liked_by.users_who_liked.all()), 
-            [user]
+            [user.profile]
         )
     def test_like_yourself(self): 
         self.client.login(username=self.user.username, password="12345")
-        url = reverse("posts-like", kwargs={
+        url = reverse("posts-toggle-like", kwargs={
             'pk': self.post1.pk
         })
         expected_response = { 
@@ -199,7 +200,7 @@ class TestPostsViewSet(ViewTestBase):
     def test_like_on_non_existing_post(self): 
         self.sign_in_random_user() 
         test_post_pk = 424242 
-        url = reverse("posts-like", kwargs={
+        url = reverse("posts-toggle-like", kwargs={
             'pk': test_post_pk
         }) 
         expected_response = {
@@ -208,7 +209,7 @@ class TestPostsViewSet(ViewTestBase):
         self.request_test(url, self.client.post, {}, expected_response, 404)
     def test_like_while_not_signed_in(self): 
         test_post_pk = self.post1 
-        url = reverse("posts-like", kwargs={
+        url = reverse("posts-toggle-like", kwargs={
             'pk': test_post_pk
         })
         expected_response = {

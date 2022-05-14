@@ -37,7 +37,7 @@ class CommentsViewSet(ViewSet):
         post = get_object_or_404(Post, pk=post_pk) 
         text = request.data['text']
         new_comment = Comment.objects.create(
-            author=request.user, 
+            author=request.user.profile, 
             post=post, 
             text=text
         )
@@ -45,10 +45,10 @@ class CommentsViewSet(ViewSet):
         
         return Response(response, status=200)
 
-    @action(detail=True, methods=["POST"], url_name="like")
-    def like(self, request, pk=None): 
+    @action(detail=True, methods=["POST"], url_name="toggle-like")
+    def toggle_like(self, request, pk=None): 
         comment = get_object_or_404(Comment, pk=pk)
-        liked_successfuly = comment.liked_by.add_like_from(request.user) 
+        liked_successfuly = comment.liked_by.toggle_like_from(request.user.profile) 
         if not liked_successfuly: 
             return Response({
                 'detail': "You cannot like your own content."

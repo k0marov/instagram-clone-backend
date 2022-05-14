@@ -1,5 +1,6 @@
 """Test all models"""
 from abc import abstractmethod
+from instagram_app.tests.shared_helpers import create_test_profile
 import setup_django
 setup_django.setup_tests()
 
@@ -52,24 +53,31 @@ class AbstractTestLikesList:
     def test_liked_by_count(self): 
         liked_by = self.get_likes_list() 
         self.assertEqual(liked_by.count(), 0)
-        liked_by.users_who_liked.add(create_test_user()) 
+        liked_by.users_who_liked.add(create_test_profile()) 
         self.assertEqual(liked_by.count(), 1)
-    def test_liked_by_add_like(self): 
+    def test_liked_by_toggle_like_add(self): 
         liked_by = self.get_likes_list()
-        liked_by.add_like_from(create_test_user()) 
+        liked_by.toggle_like_from(create_test_profile()) 
         self.assertEqual(liked_by.users_who_liked.count(), 1)
+    def test_liked_by_toggle_like_remove(self): 
+        liked_by = self.get_likes_list() 
+        profile = create_test_profile() 
+        liked_by.users_who_liked.add(profile)
+        liked_by.toggle_like_from(profile) 
+        self.assertEqual(liked_by.users_who_liked.count(), 0)
+
 
     def test_liked_by_add_selflike(self): 
         '''liking your own post should not count'''
         liked_by = self.get_likes_list() 
-        liked_by.add_like_from(liked_by.get_liked_object_author())
+        liked_by.toggle_like_from(liked_by.get_liked_object_author())
         self.assertEqual(liked_by.users_who_liked.count(), 0)
 
 
 class TestPost(TestCase, AbstractTestLikesList): 
     def setUp(self): 
         self.test_post = Post.objects.create(
-            author=create_test_user(),
+            author=create_test_user().profile,
             text="A test post"
         ) 
     # override
@@ -99,12 +107,12 @@ class TestPost(TestCase, AbstractTestLikesList):
 class TestComment(TestCase, AbstractTestLikesList): 
     def setUp(self): 
         self.post = Post.objects.create(
-            author=create_test_user(), 
+            author=create_test_user().profile, 
             text="A test post"
         )
         self.comment = Comment.objects.create(
             post=self.post, 
-            author=create_test_user(), 
+            author=create_test_user().profile, 
             text="A test comment"
         )
     # override

@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.decorators import action 
 
 from instagram_app.serializers import PostSerializer
-from instagram_app.models import Post
+from instagram_app.models import Post, Profile
 
 class PostsViewSet(ViewSet): 
     def get_permissions(self): 
@@ -20,7 +20,7 @@ class PostsViewSet(ViewSet):
         profile_id = request.query_params.get('profile_id') 
         if profile_id is None: 
             return Response({'detail': 'You must pass in profile_id as a query parameter.'}, 401)
-        author = get_object_or_404(get_user_model(), pk=profile_id)
+        author = get_object_or_404(Profile, pk=profile_id)
         posts = Post.objects.filter(author=author) 
         serializer = PostSerializer(posts, many=True) 
         response = {
@@ -32,7 +32,7 @@ class PostsViewSet(ViewSet):
         """Create a new post (author is the logged in user)"""
         text = request.data["text"]
         new_post = Post.objects.create(
-            author=request.user,
+            author=request.user.profile,
             text=text, 
         )
         response = PostSerializer(new_post).data
@@ -42,7 +42,7 @@ class PostsViewSet(ViewSet):
         """Edit an existing post (author must be the logged in user)"""
         text = request.data["text"] 
         post = get_object_or_404(Post, pk=pk) 
-        if post.author != request.user:
+        if post.author != request.user.profile:
             return Response(status=403)
         post.text = text 
         post.save() 
@@ -52,15 +52,15 @@ class PostsViewSet(ViewSet):
     def destroy(self, request, pk=None): 
         """Delete an existing post (author must be the logged in user)"""
         post = get_object_or_404(Post, pk=pk)
-        if post.author != request.user:
+        if post.author != request.user.profile:
             return Response(status=403)
         post.delete() 
         return Response(status=200)
 
-    @action(detail=True, methods=["POST"], url_name="like")
-    def like(self, request, profile_pk=None, pk=None): 
+    @action(detail=True, methods=["POST"], url_name="toggle-like")
+    def toggle_like(self, request, profile_pk=None, pk=None): 
         post = get_object_or_404(Post, pk=pk)
-        liked_successfully = post.liked_by.add_like_from(request.user)
+        liked_successfully = post.liked_by.toggle_like_from(request.user.profile)
         if not liked_successfully: 
             return Response({
                 'detail': "You cannot like your own content."
